@@ -3,11 +3,19 @@ local upstairsRooms = [5, 6, 7];
 local HIGHEST_DOWNSTAIR_ROOM = 4;
 local currentRoom = null;
 
-function StartWave() { //called whenever an altmode wave starts
-	//self.TerminateScriptScope(); //make sure a fresh instance is running every time it's called
+function WaveInit() { //on wave init teleport players to spawn
 	self.ValidateScriptScope();
-	downstairsRooms = [1, 2, 3, 4];
-	upstairsRooms = [5, 6, 7];
+	local spawn = Entities.FindByName(null, "teamspawn_all");
+	
+	while(player = Entities.FindByClassname(player, "player")) {
+	  if(!IsPlayerABot(player) && player.GetTeam() == 2) {
+		player:Teleport(true, spawn.GetOrigin());
+	  }
+	}
+}
+
+function WaveStart() { //called whenever an altmode wave starts
+	//self.TerminateScriptScope(); //make sure a fresh instance is running every time it's called
 	
 	local startingRooms = [1, 6, 7];
 	local firstRoom = startingRooms[RandomInt(0, 2)];

@@ -4,19 +4,23 @@ local HIGHEST_DOWNSTAIR_ROOM = 4;
 local currentRoom = null;
 
 function WaveInit() { //on wave init teleport players to spawn
+	self.TerminateScriptScope();
 	self.ValidateScriptScope();
+	
+	//printl(self.ValidateScriptScope());
+	PrecacheSound("weapons/drg_pomson_drain_01.wav");
+	
 	local spawn = Entities.FindByName(null, "teamspawn_all");
 	
+	local player = null;
 	while(player = Entities.FindByClassname(player, "player")) {
 	  if(!IsPlayerABot(player) && player.GetTeam() == 2) {
-		player:Teleport(true, spawn.GetOrigin());
+		player.Teleport(true, spawn.GetOrigin(), false, QAngle(0, 0, 0), false, Vector(0, 0, 0));
 	  }
 	}
 }
 
 function WaveStart() { //called whenever an altmode wave starts
-	//self.TerminateScriptScope(); //make sure a fresh instance is running every time it's called
-	
 	local startingRooms = [1, 6, 7];
 	local firstRoom = startingRooms[RandomInt(0, 2)];
 	StartRoom(firstRoom);
@@ -36,14 +40,15 @@ function StartRoom(room) { //enable room
 	//EntFire(relayName, "Trigger");
 	
 	EntFire("light_" + room, "SetPattern", "m");
-	EntFire("notaunt_" + room + "*", "Enable");
+	EntFire("notaunt_" + room, "Enable");
+	EntFire("notaunt_toggle_" + room + "_relay", "Enable");
 	EntFire("physbox_" + room, "FireUser1");
 	EntFire("physbox_" + room, "AddOutput", "solid 6");
 	EntFire("pomson_" + room, "Enable");
 	EntFire("push_" + room, "Enable");
 	EntFire("push_" + room, "Disable", null, 1.3);
 	EntFire("respawnvis_" + room, "Enable");
-	EntFire("teleport_spawnbot_roof" + room, "AddOutput", "target alt_spawn_" + room);
+	EntFire("teleport_spawnbot_roof", "AddOutput", "target alt_spawn_" + room);
 }
 
 function DoneRoom() { //room done, disable everything
@@ -52,13 +57,13 @@ function DoneRoom() { //room done, disable everything
 	EntFire("teleport_spawnbot_roof", "AddOutput", "target ``"); //check this
 	//EntFire(relayName, "Trigger");
 	
-	EntFire("light_" + room, "SetPattern", "mmmmoooopppprrrrttttvvvvxxxxzzzz");
-	EntFire("light_" + room, "Toggle", null, 3);
-	EntFire("notaunt_" + room + "*", "Disable");
-	EntFire("physbox_" + room, "AddOutput", "origin -9999 -9999 -9999");
-	EntFire("physbox_" + room, "AddOutput", "solid 0");
-	EntFire("pomson_" + room, "Disable");
-	EntFire("respawnvis_" + room, "Disable");
+	EntFire("light_" + currentRoom, "SetPattern", "mmmmoooopppprrrrttttvvvvxxxxzzzz");
+	EntFire("light_" + currentRoom, "Toggle", null, 3);
+	EntFire("notaunt_*", "Disable");
+	EntFire("physbox_" + currentRoom, "AddOutput", "origin -9999 -9999 -9999");
+	EntFire("physbox_" + currentRoom, "AddOutput", "solid 0");
+	EntFire("pomson_" + currentRoom, "Disable");
+	EntFire("respawnvis_" + currentRoom, "Disable");
 }
 
 function PickNextRoom() { //pick next room, if floor is clear swap to other floor

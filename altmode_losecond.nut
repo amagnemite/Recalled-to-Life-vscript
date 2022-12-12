@@ -15,29 +15,27 @@ function OnGameEvent_player_disconnect(params) {
 }
 
 function OnGameEvent_player_spawned(params) {
-	//add think to bot to force reaggro if they're looking at a barrier
 	local player = GetPlayerFromUserID(params.userid);
 	
-	if(IsPlayerABot(player)) { //is bot
+	if(IsPlayerABot(player)) {
+	//add think to bot to force reaggro if they're looking at a barrier
 		if(player.ValidateScriptScope()) {
 			local playerScript = player.GetScriptScope();
 			playerScript["CheckAggro"] <- function() {
 				local traceTable = {
 					start = player.GetOrigin(),
-					end = player.GetOrigin() + Vector(500, 0, 0);
+					end = player.GetOrigin() + Vector(500, 0, 0)
 				};
 			
 				if(TraceLineEx(traceTable)) {
 					if(traceTable.hit && traceTable.enthit.GetClassname() == "func_physbox_multiplayer") {
-					
+						local target = players[RandomInt(0, players.len() -1)];
+						player.SetAttentionFocus(target);
 					}
-				
 				}
-			
-			
-			
 			}
 		}
+		AddThinkToEnt(player, "CheckAggro");
 	}
 	else { //not bot (player got revived) 
 		local datatable = players[player];
@@ -51,12 +49,14 @@ function OnGameEvent_player_spawned(params) {
 		datatable.reanimEntity = null;
 		//force long respawn
 		player.RemoveCustomAttribute("mod weapon blocks healing");
+		player.AddCond(TF_COND_HALLOWEEN_IN_HELL);
 		
 		//reaggro bot
 	}
 }
 
 function OnGameEvent_player_turned_to_ghost(params) {
+	printl("ghost");
 	local player = GetPlayerFromUserID(params.userid);
 	
 	CreateReanim(player, players[player]);
@@ -69,10 +69,10 @@ function CreateReanim(player, datatable) {
 		origin = player.EyePosition()
 	});
 	
-	NetProps.SetPropInt(reanim, "m_iMaxHealth", 75 + (datatable.reanimCount * 10);
+	NetProps.SetPropInt(reanim, "m_iMaxHealth", 75 + (datatable.reanimCount * 10));
 	NetProps.SetPropInt(reanim, "m_nBody", 4);
 	
-	reanim:.SetOwner(player);
+	reanim.SetOwner(player);
 	
 	datatable.reanimState = true;
 	datatable.reanimEntity = reanim;
@@ -88,16 +88,33 @@ function BecomeGhost(player, datatable) {
 		}
 	}
 	
-	//reaggro mimics
+	//deaggro mimics
 	
 	//prevent bot aggro somehow
-	player:AddCustomAttribute("mod weapon blocks healing", 1)
+	player.AddCustomAttribute("mod weapon blocks healing", 1)
 	//accepts string, float, float, 2nd probably duration?
 }
 
+function OnGameEvent_mvm_wave_failed() {
+	Reset();
+}
+
+function OnGameEvent_mvm_wave_complete() {
+	Reset();
+}
+
+function Reset() {
+	foreach(player in players) {
+		player.RemoveCustomAttribute("mod weapon blocks healing");
+	}
+	self.TerminateScriptScope()
+}
+
 function WaveInit() {
-	self.ValidateScriptScope();
-	if(!IsModelPrecached("models/props_halloween/ghost_no_hat_red.mdl") {
+	//self.TerminateScriptScope();
+	//self.ValidateScriptScope();
+	
+	if(!IsModelPrecached("models/props_halloween/ghost_no_hat_red.mdl")) {
 		PrecacheModel("models/props_halloween/ghost_no_hat_red.mdl");
 		PrecacheSound("vo/halloween_boo1.mp3");
 		PrecacheSound("vo/halloween_boo2.mp3");
@@ -112,27 +129,31 @@ function WaveInit() {
 function WaveStart() {
 	local player = null;
 	while(player = Entities.FindByClassname(player, "player")) {
-	  if(!IsPlayerABot(player) && player.GetTeam() == 2) {
-		players[player] <- { //handle
-			reanimState = false,
-			reanimEntity = null,
-			reanimCount = 0
-		};
-	  }
+		if(!IsPlayerABot(player) && player.GetTeam() == 2) {
+			players[player] <- { //handle
+				reanimState = false,
+				reanimEntity = null,
+				reanimCount = 0
+			};
+			player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
+		}
 	}
+	//AddThinkToEnt(self, "Think");
 	
 	//display_game_events 1
 	__CollectGameEventCallbacks(this);
 }
 
+//check if everyone is "dead" and end round if so
 function Think() {
 	local alive = 0;
 	
-	foreach(player in players) {
-		if(players[player].reanimState && !players[player].reanimEntity.IsValid()) {
+	foreach(player, datatable in players) {
+		if(datatable.reanimState && !datatable.reanimEntity) {
+			//reanim was somehow destroyed, force respawn
 			player.ForceRespawn();
 		}
-		else if(!player.InCond(TF_COND_HALLOWEEN_GHOST_MODE)) {
+		else if(!player.InCond(Constants.ETFCond.TF_COND_HALLOWEEN_GHOST_MODE) && player.GetHealth() > 0) {
 			alive++;
 		}
 	}

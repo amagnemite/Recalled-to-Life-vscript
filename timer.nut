@@ -1,46 +1,39 @@
-local healthBar = Entities.FindByClassname(null, "monster_resource")
-local TOTAL_TIME = 150; //2.5
-local LOW_TIME = 255 * .2;
-local REFIRE_TIME = TOTAL_TIME / 255;
-local counter = 255;
-
-function Start() {
-	NetProps.SetPropInt(healthBar, "m_iBossHealthPercentageByte", 255);
-	AddThinkToEnt(self, "Think");
-}
-
-function Think() {
-	counter--;
-	NetProps.SetPropInt(healthBar, "m_iBossHealthPercentageByte", counter);
+for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
+	local player = PlayerInstanceFromIndex(i);
+	if(player == null) continue;
+	if(!IsPlayerABot(player)) continue;
 	
-	if(counter == 0) {
-		EntFire("bots_win", "RoundWin");
+	//sometimes tags persist on bots, so need to look for one that's actually alive
+	if(player.HasBotTag("timer") && player.GetHealth() > 1) {
+		//i = Constants.Server.MAX_PLAYERS + 1;
+		player.ValidateScriptScope()
+		
+		player.GetScriptScope()["Counter"] <- player.GetHealth();
+		player.GetScriptScope()["Think"] <- function() {
+			if(self.GetHealth() <= 1 && self.GetScriptScope()["Counter"] > 0) {
+				//autokilled by wave end, remove think
+				printl("timer killed by populator")
+				AddThinkToEnt(self, null);
+				NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
+				self.GetScriptScope()["Counter"] = null;
+			}
+			else if(self.GetHealth() != self.GetScriptScope()["Counter"]) {
+				printl("added time")
+				self.GetScriptScope()["Counter"] = self.GetHealth();
+			}
+			
+			if(self.GetScriptScope()["Counter"] <= 0) {
+				//if counter hits 0, bots win
+				AddThinkToEnt(self, null);
+				NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
+				//EntFire("bots_win", "RoundWin")
+			}
+			else {
+				self.GetScriptScope()["Counter"]-= 10;
+				self.SetHealth(player.GetHealth() - 10);
+			}
+			return 1;
+		}
+		AddThinkToEnt(player, "Think");
 	}
-
-	return REFIRE_TIME;
-}
-
-function AddTime(time) {
-	counter = counter + time > 255 ? 255 : counter + time
-	CheckTime();
-}
-
-//if 1/5 time left, change bar to green ver
-function CheckTime() {
-	if(counter < LOW_TIME) {
-		NetProps.SetPropInt(healthBar, "m_iBossState", 1);
-	}
-	else {
-		NetProps.SetPropInt(healthBar, "m_iBossState", 0);
-	}
-}
-
-function OnGameEvent_mvm_wave_failed() {
-	AddThinkToEnt(self, null);
-	self.TerminateScriptScope();
-}
-
-function OnGameEvent_mvm_wave_complete() {
-	AddThinkToEnt(self, null);
-	self.TerminateScriptScope();
 }

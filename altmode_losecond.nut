@@ -80,10 +80,11 @@ function CreateReanim(player, datatable) {
 
 function BecomeGhost(player, datatable) {
 	foreach(medic in players) {
+		printl(medic.GetHealTarget());
 		if(medic.GetHealTarget() == player) {
 			local weapon = medic.GetActiveWeapon();
 			if(weapon.GetClassname() == "tf_weapon_medigun") {
-				NetProps.SetPropEntity(weapon, "m_hHealingTarget", null);
+				NetProps.SetPropEntity(self, "m_hHealingTarget", null)
 			}
 		}
 	}
@@ -95,25 +96,25 @@ function BecomeGhost(player, datatable) {
 	//accepts string, float, float, 2nd probably duration?
 }
 
-function OnGameEvent_mvm_wave_failed() {
+function OnGameEvent_mvm_wave_failed(params) {
 	Reset();
 }
 
-function OnGameEvent_mvm_wave_complete() {
+function OnGameEvent_mvm_wave_complete(params) {
 	Reset();
 }
 
 function Reset() {
+	local timer = Entities.FindByName(null, "timer_script");
+	local initrelay = Entities.FindByName(null, "altmode_init_relay");
+	AddThinkToEnt(timer, null);
+	AddThinkToEnt(initrelay, null);
 	foreach(player in players) {
 		player.RemoveCustomAttribute("mod weapon blocks healing");
 	}
-	self.TerminateScriptScope()
 }
 
-function WaveInit() {
-	//self.TerminateScriptScope();
-	//self.ValidateScriptScope();
-	
+function WaveInit() {	
 	if(!IsModelPrecached("models/props_halloween/ghost_no_hat_red.mdl")) {
 		PrecacheModel("models/props_halloween/ghost_no_hat_red.mdl");
 		PrecacheSound("vo/halloween_boo1.mp3");
@@ -127,6 +128,8 @@ function WaveInit() {
 }
 
 function WaveStart() {
+	players.clear();
+
 	local player = null;
 	while(player = Entities.FindByClassname(player, "player")) {
 		if(!IsPlayerABot(player) && player.GetTeam() == 2) {
@@ -139,9 +142,6 @@ function WaveStart() {
 		}
 	}
 	//AddThinkToEnt(self, "Think");
-	
-	//display_game_events 1
-	__CollectGameEventCallbacks(this);
 }
 
 //check if everyone is "dead" and end round if so
@@ -153,7 +153,8 @@ function Think() {
 			//reanim was somehow destroyed, force respawn
 			player.ForceRespawn();
 		}
-		else if(!player.InCond(Constants.ETFCond.TF_COND_HALLOWEEN_GHOST_MODE) && player.GetHealth() > 0) {
+		else if(!player.InCond(Constants.ETFCond.TF_COND_HALLOWEEN_GHOST_MODE) && 
+			NetProps.GetPropInt(target, "m_lifeState") == 0) {
 			alive++;
 		}
 	}

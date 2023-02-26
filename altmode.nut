@@ -1,22 +1,30 @@
 local downstairsRooms = [1, 2, 3, 4];
 local upstairsRooms = [5, 6, 7];
+local allRooms = [1, 2, 3, 4, 5, 6, 7];
 local HIGHEST_DOWNSTAIR_ROOM = 4;
 local currentRoom = null;
 
 function WaveInit() { //on wave init teleport players to spawn
-	self.TerminateScriptScope();
-	self.ValidateScriptScope();
 	
-	//printl(self.ValidateScriptScope());
-	PrecacheSound("weapons/drg_pomson_drain_01.wav");
+	foreach(val in downstairsRooms) {
+		printl(val);
+	}
+	foreach(val in upstairsRooms) {
+		printl(val);
+	}
+	if(!IsSoundPrecached("weapons/drg_pomson_drain_01.wav")) {
+		PrecacheSound("weapons/drg_pomson_drain_01.wav");
+	}
 	
 	local spawn = Entities.FindByName(null, "teamspawn_all");
 	
-	local player = null;
-	while(player = Entities.FindByClassname(player, "player")) {
-	  if(!IsPlayerABot(player) && player.GetTeam() == 2) {
-		player.Teleport(true, spawn.GetOrigin(), false, QAngle(0, 0, 0), false, Vector(0, 0, 0));
-	  }
+	for (local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
+		local player = PlayerInstanceFromIndex(i)
+		if(player == null) continue;
+		
+		if(!IsPlayerABot(player) && player.GetTeam() == 2) {
+			player.Teleport(true, spawn.GetOrigin(), false, QAngle(0, 0, 0), false, Vector(0, 0, 0));
+		}
 	}
 }
 
@@ -35,10 +43,16 @@ function WaveStart() { //called whenever an altmode wave starts
 	}
 }
 
-function StartRoom(room) { //enable room
-	//local relayName = "altmode_start_" + room + "_relay";
-	//EntFire(relayName, "Trigger");
+function ChaosWaveStart() {
+	local startingRooms = [1, 6, 7];
+	local firstRoom = startingRooms[RandomInt(0, 2)];
+	StartRoom(firstRoom);
 	
+	allRooms.remove(currentArray.find(firstRoom));
+
+}
+
+function StartRoom(room, teleport) { //enable room
 	EntFire("light_" + room, "SetPattern", "m");
 	EntFire("notaunt_" + room, "Enable");
 	EntFire("notaunt_toggle_" + room + "_relay", "Enable");
@@ -48,26 +62,30 @@ function StartRoom(room) { //enable room
 	EntFire("push_" + room, "Enable");
 	EntFire("push_" + room, "Disable", null, 1.3);
 	EntFire("respawnvis_" + room, "Enable");
-	EntFire("teleport_spawnbot_roof", "AddOutput", "target alt_spawn_" + room);
+	EntFire("teleport_spawn_" + teleport, "Enable");
+	EntFire("teleport_spawn_" + teleport, "AddOutput", "target alt_spawn_" + room);
+	
+	if(teleport != null) {
+		//training annotation
+	}
+	//todo: fix above
 }
 
-function DoneRoom() { //room done, disable everything
-	//local relayName = "altmode_done_" + currentRoom + "_relay";
-
-	EntFire("teleport_spawnbot_roof", "AddOutput", "target ``"); //check this
-	//EntFire(relayName, "Trigger");
+function DoneRoom(room) { //room done, disable everything
+	EntFire("teleport_spawn_1", "AddOutput", "target ``"); //check this
 	
-	EntFire("light_" + currentRoom, "SetPattern", "mmmmoooopppprrrrttttvvvvxxxxzzzz");
-	EntFire("light_" + currentRoom, "Toggle", null, 3);
+	EntFire("light_" + room, "SetPattern", "mmmmoooopppprrrrttttvvvvxxxxzzzz");
+	EntFire("light_" + room, "Toggle", null, 3);
 	EntFire("notaunt_*", "Disable");
-	EntFire("physbox_" + currentRoom, "AddOutput", "origin -9999 -9999 -9999");
-	EntFire("physbox_" + currentRoom, "AddOutput", "solid 0");
-	EntFire("pomson_" + currentRoom, "Disable");
-	EntFire("respawnvis_" + currentRoom, "Disable");
+	EntFire("physbox_" + room, "AddOutput", "origin -9999 -9999 -9999");
+	EntFire("physbox_" + room, "AddOutput", "solid 0");
+	EntFire("pomson_" + room, "Disable");
+	EntFire("respawnvis_" + room, "Disable");
+	EntFire("timer_script", "RunScriptCode", "AddTime(51)");
 }
 
 function PickNextRoom() { //pick next room, if floor is clear swap to other floor
-	DoneRoom();
+	DoneRoom(currentRoom);
 	
 	printl(currentRoom)
 	local currentArray = currentRoom <= HIGHEST_DOWNSTAIR_ROOM ? downstairsRooms : upstairsRooms;
@@ -89,4 +107,9 @@ function PickNextRoom() { //pick next room, if floor is clear swap to other floo
 	currentRoom = currentArray[newRoomIndex];
 
 	StartRoom(currentRoom);
+}
+
+function ChaosPickNextRoom() {
+	//when room is done -> doneroom
+	//when a new room is starting, irrespective if a diff room is running
 }

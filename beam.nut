@@ -1,10 +1,10 @@
 local scope = self.GetScriptScope();
 
-scope["autoheal"] <- 0;
+scope.autoheal <- 0;
 //scope["target"] <- null;
-scope["player"] <- null;
-scope["qfMultiplier"] <- 0;
-scope["enemyTeam"] <- self.GetTeam() == 2 ? 3 : 2;
+scope.player <- null;
+scope.qfMultiplier <- 0;
+scope.enemyTeam <- self.GetTeam() == 2 ? 3 : 2;
 
 function Setup(player) {
 	this.player = player;

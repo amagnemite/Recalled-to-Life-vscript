@@ -4,32 +4,33 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 	if(!IsPlayerABot(player)) continue;
 	
 	//sometimes tags persist on bots, so need to look for one that's actually alive
-	if(player.HasBotTag("timer") && player.GetHealth() > 1) {
+	if(player.HasBotTag("timer") && NetProps.GetPropInt(player, "m_lifeState") == 0) {
 		//i = Constants.Server.MAX_PLAYERS + 1;
 		player.ValidateScriptScope()
 		
-		player.GetScriptScope()["Counter"] <- player.GetHealth();
-		player.GetScriptScope()["Think"] <- function() {
-			if(self.GetHealth() <= 1 && self.GetScriptScope()["Counter"] > 0) {
+		//use a counter and direct hp so nothing weird happens if bot is autokilled
+		player.GetScriptScope().counter <- player.GetHealth();
+		player.GetScriptScope().Think <- function() {
+			if(NetProps.GetPropInt(target, "m_lifeState") != 0 && self.GetScriptScope()["Counter"] > 0) {
 				//autokilled by wave end, remove think
 				printl("timer killed by populator")
 				AddThinkToEnt(self, null);
 				NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
-				self.GetScriptScope()["Counter"] = null;
+				delete self.GetScriptScope().counter;
 			}
-			else if(self.GetHealth() != self.GetScriptScope()["Counter"]) {
+			else if(self.GetHealth() != self.GetScriptScope().counter) {
 				printl("added time")
-				self.GetScriptScope()["Counter"] = self.GetHealth();
+				self.GetScriptScope().counter = self.GetHealth();
 			}
 			
-			if(self.GetScriptScope()["Counter"] <= 0) {
+			if(self.GetScriptScope().counter <= 0) {
 				//if counter hits 0, bots win
 				AddThinkToEnt(self, null);
 				NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
 				//EntFire("bots_win", "RoundWin")
 			}
 			else {
-				self.GetScriptScope()["Counter"]-= 10;
+				self.GetScriptScope().counter -= 10;
 				self.SetHealth(player.GetHealth() - 10);
 			}
 			return 1;

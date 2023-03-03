@@ -16,14 +16,14 @@ function WaveInit() { //on wave init teleport players to spawn
 		PrecacheSound("weapons/drg_pomson_drain_01.wav");
 	}
 	
-	local spawn = Entities.FindByName(null, "teamspawn_all");
+	local spawnOrigin = Entities.FindByName(null, "teamspawn_all").GetOrigin();
 	
 	for (local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 		local player = PlayerInstanceFromIndex(i)
 		if(player == null) continue;
 		
 		if(!IsPlayerABot(player) && player.GetTeam() == 2) {
-			player.Teleport(true, spawn.GetOrigin(), false, QAngle(0, 0, 0), false, Vector(0, 0, 0));
+			player.Teleport(true, spawnOrigin, false, QAngle(0, 0, 0), false, Vector(0, 0, 0));
 		}
 	}
 }

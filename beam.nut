@@ -121,7 +121,7 @@ function HaveTargetThink() { //we have a target, now check if we're still valid
 	}
 
 	if(isValid) {
-		//NetProps.SetPropEntity(self, "m_hHealingTarget", target);
+		//"NetProps.SetPropEntity(self, `m_hHealingTarget`, null)"
 		damageTimer++;
 		
 		//if(damageTimer == DAMAGE_TIME) {
@@ -166,6 +166,7 @@ function DamageBot() {
 	const KRITZKRIEG = 35;
 	const QUICKFIX = 411;
 	const VACCINATOR = 998;
+	const QFBONUS = 1.4;
 	//anything not those 3 is stock/reskin
 	
 	const DAMAGE = 10;
@@ -188,6 +189,10 @@ function DamageBot() {
 		else if(type == KRITZKRIEG) {
 			fullDamage = fullDamage * 2;
 		}
+	}
+	
+	if(type == QUICKFIX) {
+		fullDamage = fullDamage * QFBONUS;
 	}
 	
 	target.TakeDamageCustom(player, null, self, 

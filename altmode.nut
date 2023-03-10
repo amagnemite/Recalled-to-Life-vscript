@@ -1,7 +1,7 @@
 local downstairsRooms = [1, 2, 3, 4];
 local upstairsRooms = [5, 6, 7];
 local allRooms = [1, 2, 3, 4, 5, 6, 7];
-local HIGHEST_DOWNSTAIR_ROOM = 4;
+const HIGHEST_DOWNSTAIR_ROOM = 4;
 local currentRoom = null;
 
 function WaveInit() { //on wave init teleport players to spawn
@@ -21,8 +21,9 @@ function WaveInit() { //on wave init teleport players to spawn
 	for (local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 		local player = PlayerInstanceFromIndex(i)
 		if(player == null) continue;
+		if(IsPlayerABot(player)) continue;
 		
-		if(!IsPlayerABot(player) && player.GetTeam() == 2) {
+		if(player.GetTeam() == 2) {
 			player.Teleport(true, spawnOrigin, false, QAngle(0, 0, 0), false, Vector(0, 0, 0));
 		}
 	}
@@ -31,7 +32,7 @@ function WaveInit() { //on wave init teleport players to spawn
 function WaveStart() { //called whenever an altmode wave starts
 	local startingRooms = [1, 6, 7];
 	local firstRoom = startingRooms[RandomInt(0, 2)];
-	StartRoom(firstRoom);
+	StartRoom(firstRoom, null);
 	
 	currentRoom = firstRoom;
 	
@@ -53,6 +54,14 @@ function ChaosWaveStart() {
 }
 
 function StartRoom(room, teleport) { //enable room
+	if(teleport != null) {
+		//training annotation
+	}
+	else {
+		teleport = 1;
+	}
+	//todo: fix above
+
 	EntFire("light_" + room, "SetPattern", "m");
 	EntFire("notaunt_" + room, "Enable");
 	EntFire("notaunt_toggle_" + room + "_relay", "Enable");
@@ -64,14 +73,9 @@ function StartRoom(room, teleport) { //enable room
 	EntFire("respawnvis_" + room, "Enable");
 	EntFire("teleport_spawn_" + teleport, "Enable");
 	EntFire("teleport_spawn_" + teleport, "AddOutput", "target alt_spawn_" + room);
-	
-	if(teleport != null) {
-		//training annotation
-	}
-	//todo: fix above
 }
 
-function DoneRoom(room) { //room done, disable everything
+function DoneRoom(room, teleport) { //room done, disable everything
 	EntFire("teleport_spawn_1", "AddOutput", "target ``"); //check this
 	
 	EntFire("light_" + room, "SetPattern", "mmmmoooopppprrrrttttvvvvxxxxzzzz");

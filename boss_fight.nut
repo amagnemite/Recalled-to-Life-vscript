@@ -10,8 +10,6 @@ function StartBossFight() {
 		if(player == null) continue;
 		if(IsPlayerABot(player)) continue;
 		
-		players[player] <- null;
-		
 		//1s delay
 		ScreenFade(player, 255, 255, 255, 255, .5, 1);
 		
@@ -88,6 +86,20 @@ function SummonMimics() { //commons cleared, set up the player mimics
 	
 }
 
+function MimicPlayers() { //copy player weapon/hat attributes to bots
+	local totalPlayerCount = players.len();
+	const TOTALHP = 21000;
+	local bothp = TOTALHP / totalPlayerCount;
+	
+	foreach(player in players) {
+	
+	
+	
+	}
+
+	//kill extra bots that don't need to exist
+}
+
 function FindMimickingBot(player) {
 	//check table to see if player has a paired bot
 
@@ -98,12 +110,7 @@ function SetBotAggroOnPlayer(player, bot) {
 	//make bot aggro/focus player
 }
 
-function MimicPlayers() {
-	//copy player weapon/hat attributes to bots
-	//will likely need to be done in lua since no good way to look at attrs
 
-	//kill extra bots that don't need to exist
-}
 
 //copying attrs
 

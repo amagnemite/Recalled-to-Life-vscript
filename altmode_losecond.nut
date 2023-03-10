@@ -11,10 +11,10 @@ function OnGameEvent_player_activate(params) { //when player connects and loaded
 
 function OnGameEvent_player_disconnect(params) {
 	local player = GetPlayerFromUserID(params.userid);
-	players.rawdelete(player);
+	delete players[player];
 }
 
-function OnGameEvent_player_spawned(params) {
+function OnGameEvent_player_spawn(params) {
 	local player = GetPlayerFromUserID(params.userid);
 	
 	if(IsPlayerABot(player)) {
@@ -37,115 +37,118 @@ function OnGameEvent_player_spawned(params) {
 		}
 		AddThinkToEnt(player, "CheckAggro");
 	}
-	else { //not bot (player got revived) 
+	else { //player got revived
 		local datatable = players[player];
 		
 		if(datatable.reanimEntity) {
 			datatable.reanimEntity.Kill();		
-			datatable.reanimCount = datatable.reanimCount + 1;
+			datatable.reanimCount++;
 		}
 	
 		datatable.reanimState = false;
 		datatable.reanimEntity = null;
 		//force long respawn
 		player.RemoveCustomAttribute("mod weapon blocks healing");
-		player.AddCond(TF_COND_HALLOWEEN_IN_HELL);
-		
-		//reaggro bot
+		player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
 	}
 }
 
 function OnGameEvent_player_turned_to_ghost(params) {
-	printl("ghost");
 	local player = GetPlayerFromUserID(params.userid);
 	
-	CreateReanim(player, players[player]);
-	BecomeGhost(player, players[player]);
+	CreateReanim(player);
+	BecomeGhost(player);
 }
 
-function CreateReanim(player, datatable) {
+function OnGameEvent_mvm_wave_failed(params) {
+	Reset();
+	AddThinkToEnt(self, null);
+	NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
+}
+
+function OnGameEvent_mvm_wave_complete(params) {
+	Reset();
+	AddThinkToEnt(self, null);
+	NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
+}
+
+function Reset() {
+	const CALLBACKTABLENAME = "GameEventCallbacks";
+	
+	local callbacktable = getroottable()[CALLBACKTABLENAME];
+	
+	delete callbacktable[player_activate];
+	delete callbacktable[player_disconnect];
+	delete callbacktable[player_spawned];
+	delete callbacktable[player_turned_to_ghost];
+}
+
+function Precache() {
+	PrecacheModel("models/props_halloween/ghost_no_hat_red.mdl");
+	PrecacheSound("vo/halloween_boo1.mp3");
+	PrecacheSound("vo/halloween_boo2.mp3");
+	PrecacheSound("vo/halloween_boo3.mp3");
+	PrecacheSound("vo/halloween_boo4.mp3");
+	PrecacheSound("vo/halloween_boo5.mp3");
+	PrecacheSound("vo/halloween_boo6.mp3");
+	PrecacheSound("vo/halloween_boo7.mp3");
+}
+
+function CreateReanim(player) { //bootlegs a reanim since becoming a ghost doesn't count as dying
+	local datatable = players[player];
+	
 	local reanim = SpawnEntityFromTable("entity_revive_marker", {
-		teamnumber = 2,
+		teamnum = player.GetTeam(),
 		origin = player.EyePosition()
+		max_health = 75 + datatable.reanimCount * 10
 	});
 	
-	NetProps.SetPropInt(reanim, "m_iMaxHealth", 75 + (datatable.reanimCount * 10));
+	NetProps.SetPropEntity(reanim, "m_hOwner", player);
 	NetProps.SetPropInt(reanim, "m_nBody", 4);
-	
-	reanim.SetOwner(player);
 	
 	datatable.reanimState = true;
 	datatable.reanimEntity = reanim;
 }
 
-function BecomeGhost(player, datatable) {
-	foreach(medic in players) {
-		printl(medic.GetHealTarget());
+function BecomeGhost(player) { //force disconnects any meds healing when the player dies
+	foreach(medic, v in players) {
+		if(medic == player) continue;
+		
 		if(medic.GetHealTarget() == player) {
 			local weapon = medic.GetActiveWeapon();
 			if(weapon.GetClassname() == "tf_weapon_medigun") {
-				NetProps.SetPropEntity(self, "m_hHealingTarget", null)
+				NetProps.SetPropEntity(weapon, "m_hHealingTarget", null);
 			}
 		}
 	}
 	
-	//deaggro mimics
-	
 	//prevent bot aggro somehow
-	player.AddCustomAttribute("mod weapon blocks healing", 1)
-	//accepts string, float, float, 2nd probably duration?
-}
-
-function OnGameEvent_mvm_wave_failed(params) {
-	Reset();
-}
-
-function OnGameEvent_mvm_wave_complete(params) {
-	Reset();
-}
-
-function Reset() {
-	local timer = Entities.FindByName(null, "timer_script");
-	local initrelay = Entities.FindByName(null, "altmode_init_relay");
-	AddThinkToEnt(timer, null);
-	AddThinkToEnt(initrelay, null);
-	foreach(player in players) {
-		player.RemoveCustomAttribute("mod weapon blocks healing");
-	}
-}
-
-function WaveInit() {	
-	if(!IsModelPrecached("models/props_halloween/ghost_no_hat_red.mdl")) {
-		PrecacheModel("models/props_halloween/ghost_no_hat_red.mdl");
-		PrecacheSound("vo/halloween_boo1.mp3");
-		PrecacheSound("vo/halloween_boo2.mp3");
-		PrecacheSound("vo/halloween_boo3.mp3");
-		PrecacheSound("vo/halloween_boo4.mp3");
-		PrecacheSound("vo/halloween_boo5.mp3");
-		PrecacheSound("vo/halloween_boo6.mp3");
-		PrecacheSound("vo/halloween_boo7.mp3");
-	}
+	player.AddCustomAttribute("mod weapon blocks healing", 1, 0);
 }
 
 function WaveStart() {
-	players.clear();
+	players = {};
 
-	local player = null;
-	while(player = Entities.FindByClassname(player, "player")) {
-		if(!IsPlayerABot(player) && player.GetTeam() == 2) {
-			players[player] <- { //handle
-				reanimState = false,
-				reanimEntity = null,
-				reanimCount = 0
-			};
+	for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
+		local player = PlayerInstanceFromIndex(i);
+		if(player == null) continue;
+		if(IsPlayerABot(player)) continue;
+
+		//filters out specs
+		if(player.GetTeam() == 2) {
+			players[player] <- {};
+			players[player].reanimState <- false;
+			players[player].reanimEntity <- null;
+			players[player].reanimCount <- 0;
 			player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
 		}
 	}
-	//AddThinkToEnt(self, "Think");
+	
+	AddThinkToEnt(self, "LoseThink");
 }
 
 //check if everyone is "dead" and end round if so
-function Think() {
+function LoseThink() {
 	local alive = 0;
 	
 	foreach(player, datatable in players) {
@@ -154,7 +157,7 @@ function Think() {
 			player.ForceRespawn();
 		}
 		else if(!player.InCond(Constants.ETFCond.TF_COND_HALLOWEEN_GHOST_MODE) && 
-			NetProps.GetPropInt(target, "m_lifeState") == 0) {
+			NetProps.GetPropInt(player, "m_lifeState") == 0) {
 			alive++;
 		}
 	}

@@ -10,8 +10,8 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 		
 		//use a counter and direct hp so nothing weird happens if bot is autokilled
 		player.GetScriptScope().counter <- player.GetHealth();
-		player.GetScriptScope().Think <- function() {
-			if(NetProps.GetPropInt(target, "m_lifeState") != 0 && self.GetScriptScope()["Counter"] > 0) {
+		player.GetScriptScope().TimerThink <- function() {
+			if(NetProps.GetPropInt(self, "m_lifeState") != 0 && self.GetScriptScope().counter > 0) {
 				//autokilled by wave end, remove think
 				printl("timer killed by populator")
 				AddThinkToEnt(self, null);
@@ -35,6 +35,6 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 			}
 			return 1;
 		}
-		AddThinkToEnt(player, "Think");
+		AddThinkToEnt(player, "TimerThink");
 	}
 }

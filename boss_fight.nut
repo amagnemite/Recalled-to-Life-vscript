@@ -24,7 +24,7 @@ function StartBossFight() {
 	gmed.ValidateScriptScope();
 	gmed.GetScriptScope().recallStage <- 0;
 	gmed.GetScriptScope().spawnOrigin <- Entities.FindByName(null, "spawnbot_roof").GetOrigin();
-	gmed.GetScriptScope()["Think"] <- function() { //adaption of royal logic
+	gmed.GetScriptScope().Think <- function() { //adaption of royal logic
 		//boss damage callback exists here, but vscript ver doesn't work?
 		const THRESHOLD = 500; //crit max dmg xbow?
 		
@@ -57,7 +57,9 @@ function StartBossFight() {
 					break;
 			}
 		}
+		return .02;
 	}
+	AddThinkToEnt(gmed, "Think");
 }
 
 function RegisterGmed(tag) {
@@ -66,7 +68,7 @@ function RegisterGmed(tag) {
 		if(player == null) continue;
 		if(!IsPlayerABot(player)) continue;
 		
-		if(player.HasBotTag(tag)) {
+		if(player.HasBotTag(tag) && NetProps.GetPropInt(player, "m_lifeState") == 0) {
 			gmed = player;
 		}
 	}

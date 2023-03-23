@@ -17,6 +17,7 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 				AddThinkToEnt(self, null);
 				NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
 				delete self.GetScriptScope().counter;
+				timer = null;
 			}
 			else if(self.GetHealth() != self.GetScriptScope().counter) {
 				printl("added time")
@@ -27,6 +28,8 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 				//if counter hits 0, bots win
 				AddThinkToEnt(self, null);
 				NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
+				delete self.GetScriptScope().counter;
+				timer = null;
 				//EntFire("bots_win", "RoundWin")
 			}
 			else {
@@ -36,5 +39,6 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 			return 1;
 		}
 		AddThinkToEnt(player, "TimerThink");
+		::timer <- player; //global
 	}
 }

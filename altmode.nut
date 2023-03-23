@@ -1,7 +1,6 @@
+const HIGHEST_DOWNSTAIR_ROOM = 4;
 local downstairsRooms = [1, 2, 3, 4];
 local upstairsRooms = [5, 6, 7];
-local allRooms = [1, 2, 3, 4, 5, 6, 7];
-const HIGHEST_DOWNSTAIR_ROOM = 4;
 local currentRoom = null;
 
 function WaveInit() { //on wave init teleport players to spawn
@@ -19,7 +18,7 @@ function WaveInit() { //on wave init teleport players to spawn
 	local spawnOrigin = Entities.FindByName(null, "teamspawn_all").GetOrigin();
 	
 	for (local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
-		local player = PlayerInstanceFromIndex(i)
+		local player = PlayerInstanceFromIndex(i);
 		if(player == null) continue;
 		if(IsPlayerABot(player)) continue;
 		
@@ -32,7 +31,7 @@ function WaveInit() { //on wave init teleport players to spawn
 function WaveStart() { //called whenever an altmode wave starts
 	local startingRooms = [1, 6, 7];
 	local firstRoom = startingRooms[RandomInt(0, 2)];
-	StartRoom(firstRoom, null);
+	StartRoom(firstRoom);
 	
 	currentRoom = firstRoom;
 	
@@ -44,24 +43,7 @@ function WaveStart() { //called whenever an altmode wave starts
 	}
 }
 
-function ChaosWaveStart() {
-	local startingRooms = [1, 6, 7];
-	local firstRoom = startingRooms[RandomInt(0, 2)];
-	StartRoom(firstRoom);
-	
-	allRooms.remove(currentArray.find(firstRoom));
-
-}
-
-function StartRoom(room, teleport) { //enable room
-	if(teleport != null) {
-		//training annotation
-	}
-	else {
-		teleport = 1;
-	}
-	//todo: fix above
-
+function StartRoom(room) { //enable room
 	EntFire("light_" + room, "SetPattern", "m");
 	EntFire("notaunt_" + room, "Enable");
 	EntFire("notaunt_toggle_" + room + "_relay", "Enable");
@@ -71,24 +53,29 @@ function StartRoom(room, teleport) { //enable room
 	EntFire("push_" + room, "Enable");
 	EntFire("push_" + room, "Disable", null, 1.3);
 	EntFire("respawnvis_" + room, "Enable");
-	EntFire("teleport_spawn_" + teleport, "Enable");
-	EntFire("teleport_spawn_" + teleport, "AddOutput", "target alt_spawn_" + room);
+	EntFire("teleport_spawn_*", "Enable");
+	EntFire("teleport_spawn_*", "AddOutput", "target alt_spawn_" + room);
+	//for single room just enable/disable all the teleport spawns
 }
 
-function DoneRoom(room, teleport) { //room done, disable everything
-	EntFire("teleport_spawn_1", "AddOutput", "target ``"); //check this
+function DoneRoom(room) { //room done, disable everything
+
+	EntFire("teleport_spawn_*", "AddOutput", "target ``"); //check this
 	
 	EntFire("light_" + room, "SetPattern", "mmmmoooopppprrrrttttvvvvxxxxzzzz");
 	EntFire("light_" + room, "Toggle", null, 3);
-	EntFire("notaunt_*", "Disable");
+	EntFire("notaunt_" + room + "*", "Disable");
 	EntFire("physbox_" + room, "AddOutput", "origin -9999 -9999 -9999");
 	EntFire("physbox_" + room, "AddOutput", "solid 0");
 	EntFire("pomson_" + room, "Disable");
 	EntFire("respawnvis_" + room, "Disable");
-	EntFire("timer_script", "RunScriptCode", "AddTime(51)");
+	if(timer != null) {
+		timer.SetHealth(timer.GetHealth() + timer.GetMaxHealth() / 5);
+		//lazy calc for now
+	}
 }
 
-function PickNextRoom() { //pick next room, if floor is clear swap to other floor
+function PickNextRoom(){ //pick next room, if floor is clear swap to other floor
 	DoneRoom(currentRoom);
 	
 	printl(currentRoom)
@@ -111,9 +98,4 @@ function PickNextRoom() { //pick next room, if floor is clear swap to other floo
 	currentRoom = currentArray[newRoomIndex];
 
 	StartRoom(currentRoom);
-}
-
-function ChaosPickNextRoom() {
-	//when room is done -> doneroom
-	//when a new room is starting, irrespective if a diff room is running
 }

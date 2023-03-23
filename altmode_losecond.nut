@@ -1,7 +1,8 @@
 local players = {};
 
-function OnGameEvent_player_activate(params) { //when player connects and loaded in
+function OnGameEvent_player_activate(params) { //when player connects and loaded in?
 	local player = GetPlayerFromUserID(params.userid);
+	print("activate")
 	players[player] <- { //handle
 		reanimState = false,
 		reanimEntity = null,
@@ -62,14 +63,17 @@ function OnGameEvent_player_turned_to_ghost(params) {
 
 function OnGameEvent_mvm_wave_failed(params) {
 	Reset();
-	AddThinkToEnt(self, null);
-	NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
+
 }
 
 function OnGameEvent_mvm_wave_complete(params) {
 	Reset();
-	AddThinkToEnt(self, null);
-	NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
+}
+
+//should catch mission restart / mission change 
+function OnGameEvent_mvm_reset_stats(params) {
+	print("reset stats")
+	Reset();
 }
 
 function Reset() {
@@ -77,10 +81,21 @@ function Reset() {
 	
 	local callbacktable = getroottable()[CALLBACKTABLENAME];
 	
-	delete callbacktable[player_activate];
-	delete callbacktable[player_disconnect];
-	delete callbacktable[player_spawned];
-	delete callbacktable[player_turned_to_ghost];
+	AddThinkToEnt(self, null);
+	NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
+	
+	foreach(key, val in callbacktable) {
+		printl(key)
+	
+	}
+	
+	delete callbacktable.player_activate;
+	delete callbacktable.player_disconnect;
+	delete callbacktable.player_spawn;
+	delete callbacktable.player_turned_to_ghost;
+	delete callbacktable.mvm_wave_failed;
+	delete callbacktable.mvm_wave_complete;
+	delete callbacktable.mvm_reset_stats;
 }
 
 function Precache() {
@@ -165,4 +180,6 @@ function LoseThink() {
 	if(alive == 0) {
 		EntFire("bots_win", "RoundWin");
 	}
+	
+	return 1;
 }

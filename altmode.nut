@@ -13,6 +13,7 @@ function WaveInit() { //on wave init teleport players to spawn
 	}
 	if(!IsSoundPrecached("weapons/drg_pomson_drain_01.wav")) {
 		PrecacheSound("weapons/drg_pomson_drain_01.wav");
+		PrecacheSound("mvm/mvm_tele_activate.wav")
 	}
 	
 	local spawnOrigin = Entities.FindByName(null, "teamspawn_all").GetOrigin();
@@ -60,7 +61,7 @@ function StartRoom(room) { //enable room
 
 function DoneRoom(room) { //room done, disable everything
 
-	EntFire("teleport_spawn_*", "AddOutput", "target ``"); //check this
+	EntFire("teleport_spawn_*", "AddOutput", "target \"\""); //check this
 	
 	EntFire("light_" + room, "SetPattern", "mmmmoooopppprrrrttttvvvvxxxxzzzz");
 	EntFire("light_" + room, "Toggle", null, 3);
@@ -70,7 +71,10 @@ function DoneRoom(room) { //room done, disable everything
 	EntFire("pomson_" + room, "Disable");
 	EntFire("respawnvis_" + room, "Disable");
 	if(timer != null) {
-		timer.SetHealth(timer.GetHealth() + timer.GetMaxHealth() / 5);
+		local health = (timer.GetHealth() + timer.GetMaxHealth() / 5) > timer.GetMaxHealth() ? timer.GetMaxHealth() : 
+			timer.GetHealth() + timer.GetMaxHealth() / 5;
+	
+		timer.SetHealth(health);
 		//lazy calc for now
 	}
 }

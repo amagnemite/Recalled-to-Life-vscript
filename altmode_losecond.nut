@@ -20,6 +20,7 @@ function OnGameEvent_player_spawn(params) {
 	
 	if(IsPlayerABot(player)) {
 	//add think to bot to force reaggro if they're looking at a barrier
+		/*
 		if(player.ValidateScriptScope()) {
 			local playerScript = player.GetScriptScope();
 			playerScript["CheckAggro"] <- function() {
@@ -37,6 +38,7 @@ function OnGameEvent_player_spawn(params) {
 			}
 		}
 		AddThinkToEnt(player, "CheckAggro");
+		*/
 	}
 	else { //player got revived
 		local datatable = players[player];
@@ -50,6 +52,7 @@ function OnGameEvent_player_spawn(params) {
 		datatable.reanimEntity = null;
 		//force long respawn
 		player.RemoveCustomAttribute("mod weapon blocks healing");
+		player.AddCustomAttribute("min respawn time", 2401, -1);
 		player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
 	}
 }
@@ -72,7 +75,6 @@ function OnGameEvent_mvm_wave_complete(params) {
 
 //should catch mission restart / mission change 
 function OnGameEvent_mvm_reset_stats(params) {
-	print("reset stats")
 	Reset();
 }
 
@@ -84,10 +86,32 @@ function Reset() {
 	AddThinkToEnt(self, null);
 	NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
 	
-	foreach(key, val in callbacktable) {
-		printl(key)
-	
+	for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
+		local player = PlayerInstanceFromIndex(i);
+		if(player == null) continue;
+		if(IsPlayerABot(player)) continue;
+
+		//filters out specs
+		if(player.GetTeam() == 2) {
+			player.RemoveCustomAttribute("mod weapon blocks healing");
+			player.RemoveCustomAttribute("min respawn time");
+		}
 	}
+	
+	/*
+	callbacktable.player_activate = function() {
+	}
+	callbacktable.player_disconnect = function() {
+	}
+	callbacktable.player_spawn = function() {
+	}
+	callbacktable.player_turned_to_ghost = function() {
+	}
+	callbacktable.mvm_wave_failed = function() {
+	}
+	callbacktable.mvm_wave_complete = function() {
+	}
+	*/
 	
 	delete callbacktable.player_activate;
 	delete callbacktable.player_disconnect;
@@ -96,6 +120,7 @@ function Reset() {
 	delete callbacktable.mvm_wave_failed;
 	delete callbacktable.mvm_wave_complete;
 	delete callbacktable.mvm_reset_stats;
+	
 }
 
 function Precache() {

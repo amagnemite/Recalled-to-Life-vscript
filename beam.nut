@@ -34,6 +34,7 @@ function RefundQF() {
 function FindTargetThink() { //if not damaging bot, look for one
 	local buttonPress = NetProps.GetPropInt(player, "m_nButtons");
 	local fired = false;
+	printl("think")
 	
 	if(buttonPress & Constants.FButtons.IN_ATTACK) {
 		fired = true;

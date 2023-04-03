@@ -6,7 +6,7 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 	//sometimes tags persist on bots, so need to look for one that's actually alive
 	if(player.HasBotTag("timer") && NetProps.GetPropInt(player, "m_lifeState") == 0) {
 		//i = Constants.Server.MAX_PLAYERS + 1;
-		player.ValidateScriptScope()
+		player.ValidateScriptScope();
 		
 		//use a counter and direct hp so nothing weird happens if bot is autokilled
 		player.GetScriptScope().counter <- player.GetHealth();
@@ -17,7 +17,8 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 				AddThinkToEnt(self, null);
 				NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
 				delete self.GetScriptScope().counter;
-				timer = null;
+				::timer = null;
+				return;
 			}
 			else if(self.GetHealth() != self.GetScriptScope().counter) {
 				printl("added time")
@@ -29,7 +30,7 @@ for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 				AddThinkToEnt(self, null);
 				NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
 				delete self.GetScriptScope().counter;
-				timer = null;
+				::timer = null;
 				//EntFire("bots_win", "RoundWin")
 			}
 			else {

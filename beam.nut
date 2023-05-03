@@ -3,8 +3,12 @@ local scope = self.GetScriptScope();
 scope.autoheal <- 0;
 //scope["target"] <- null;
 scope.player <- null;
+scope.upgradeMultiplier <- 0;
 scope.qfMultiplier <- 0;
 scope.enemyTeam <- self.GetTeam() == 2 ? 3 : 2;
+
+//printl("running beam in scope")
+//printl(self)
 
 function Setup(player) {
 	this.player = player;
@@ -53,7 +57,7 @@ function FindTargetThink() { //if not damaging bot, look for one
 			//no target, can look for a new one
 			
 			local enthit = FindTargetTrace();
-			if(enthit && enthit.IsPlayer() && enthit.GetTeam() == 3) {
+			if(enthit && enthit.IsPlayer() && enthit.GetTeam() == enemyTeam) {
 				//hit blu player
 				
 				//target = enthit;
@@ -67,7 +71,7 @@ function FindTargetThink() { //if not damaging bot, look for one
 
 function HaveTargetThink() { //we have a target, damage it
 	//outside of shield activation, disconnects handled by actual game
-	if(!player.IsRageDraining() && player.GetHealTarget() && player.GetHealTarget().GetTeam() == 3) {
+	if(!player.IsRageDraining() && player.GetHealTarget() && player.GetHealTarget().GetTeam() == enemyTeam) {
 		DamageBot();
 	}
 	else {

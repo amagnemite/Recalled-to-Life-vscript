@@ -19,7 +19,7 @@ function StartRoom(room, triggerEnt) { //turn on a room's effects, called by tri
 	EntFireByHandle(triggerEnt, "Disable", null, 0, null, null);
 	
 	EntFire("room_annotation_" + room, "Show");
-	//play tele sound
+	EntFire("tf_gamerules", "playvo", "mvm/mvm_tele_activate.wav")
 
 	EntFire("light_" + room, "SetPattern", "m");
 	EntFire("notaunt_" + room, "Enable");
@@ -38,7 +38,7 @@ function DoneRoom(teleporter) { //disable room, called by pop
 	delete occupiedRooms[teleporter];
 	allRooms.append(room);
 	
-	EntFire("teleport_spawn_" + teleporter, "AddOutput", "target ``"); //check this
+	EntFire("teleport_spawn_" + teleporter, "AddOutput", "target \"\""); //check this
 	EntFire("room_trigger_" + room, "Enable");
 	
 	EntFire("light_" + room, "SetPattern", "mmmmoooopppprrrrttttvvvvxxxxzzzz");
@@ -49,7 +49,10 @@ function DoneRoom(teleporter) { //disable room, called by pop
 	EntFire("pomson_" + room, "Disable");
 	EntFire("respawnvis_" + room, "Disable");
 	if(::timer != null) {
-		::timer.SetHealth(::timer.GetHealth() + ::timer.GetMaxHealth() / 5);
+		local health = (timer.GetHealth() + timer.GetMaxHealth() / 5) > timer.GetMaxHealth() ? timer.GetMaxHealth() : 
+			timer.GetHealth() + timer.GetMaxHealth() / 5;
+	
+		timer.SetHealth(health);
 		//lazy calc for now
 	}
 }

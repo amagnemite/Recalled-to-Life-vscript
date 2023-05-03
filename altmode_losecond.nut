@@ -52,6 +52,7 @@ function OnGameEvent_player_spawn(params) {
 		datatable.reanimEntity = null;
 		//force long respawn
 		player.RemoveCustomAttribute("mod weapon blocks healing");
+		player.RemoveCustomAttribute("ignored by bots");
 		player.AddCustomAttribute("min respawn time", 2401, -1);
 		player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
 	}
@@ -91,11 +92,9 @@ function Reset() {
 		if(player == null) continue;
 		if(IsPlayerABot(player)) continue;
 
-		//filters out specs
-		if(player.GetTeam() == 2) {
-			player.RemoveCustomAttribute("mod weapon blocks healing");
-			player.RemoveCustomAttribute("min respawn time");
-		}
+		player.RemoveCustomAttribute("mod weapon blocks healing");
+		player.RemoveCustomAttribute("ignored by bots");
+		player.RemoveCustomAttribute("min respawn time");
 	}
 	
 	/*
@@ -138,13 +137,13 @@ function CreateReanim(player) { //bootlegs a reanim since becoming a ghost doesn
 	local datatable = players[player];
 	
 	local reanim = SpawnEntityFromTable("entity_revive_marker", {
-		teamnum = player.GetTeam(),
+		teamnum = player.GetTeam()
 		origin = player.EyePosition()
-		max_health = 75 + datatable.reanimCount * 10
+		//max_health = 75 + datatable.reanimCount * 10
 	});
 	
 	NetProps.SetPropEntity(reanim, "m_hOwner", player);
-	NetProps.SetPropInt(reanim, "m_nBody", 4);
+	//NetProps.SetPropInt(reanim, "m_nBody", 4);
 	
 	datatable.reanimState = true;
 	datatable.reanimEntity = reanim;
@@ -163,6 +162,7 @@ function BecomeGhost(player) { //force disconnects any meds healing when the pla
 	}
 	
 	//prevent bot aggro somehow
+	player.AddCustomAttribute("ignored by bots", 1, 0);
 	player.AddCustomAttribute("mod weapon blocks healing", 1, 0);
 }
 
@@ -172,16 +172,15 @@ function WaveStart() {
 	for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
 		local player = PlayerInstanceFromIndex(i);
 		if(player == null) continue;
+		if(player.GetTeam() != 2) continue; //filters out specs
 		if(IsPlayerABot(player)) continue;
 
-		//filters out specs
-		if(player.GetTeam() == 2) {
-			players[player] <- {};
-			players[player].reanimState <- false;
-			players[player].reanimEntity <- null;
-			players[player].reanimCount <- 0;
-			player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
-		}
+		players[player] <- {};
+		players[player].reanimState <- false;
+		players[player].reanimEntity <- null;
+		players[player].reanimCount <- 0;
+		player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
+		player.AddCustomAttribute("min respawn time", 2401, -1);
 	}
 	
 	AddThinkToEnt(self, "LoseThink");

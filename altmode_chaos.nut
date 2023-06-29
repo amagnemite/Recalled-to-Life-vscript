@@ -19,6 +19,7 @@ function StartRoom(room, triggerEnt) { //turn on a room's effects, called by tri
 	EntFireByHandle(triggerEnt, "Disable", null, 0, null, null);
 	
 	EntFire("room_annotation_" + room, "Show");
+	//particle
 	EntFire("tf_gamerules", "playvo", "mvm/mvm_tele_activate.wav")
 
 	EntFire("light_" + room, "SetPattern", "m");

@@ -3,9 +3,10 @@ local players = {};
 function OnGameEvent_player_activate(params) { //when player connects and loaded in?
 	local player = GetPlayerFromUserID(params.userid);
 	print("activate")
+	if(player.GetTeam() == Constants.ETFTeam.T
 	players[player] <- { //handle
-		reanimState = false,
-		reanimEntity = null,
+		reanimState = false
+		reanimEntity = null
 		reanimCount = 0
 	};
 }

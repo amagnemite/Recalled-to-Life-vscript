@@ -10,6 +10,8 @@ scope.enemyTeam <- self.GetTeam() == 2 ? 3 : 2;
 scope.type <- 0;
 scope.charge <- 0;
 
+foreach(a,b in Constants){foreach(k,v in b){if(!(k in getroottable())){getroottable()[k]<-v;}}} //takes all constant keyvals and puts them in global
+
 function levelCheck(level) {
 	//so on wave loss weapon entities get refreshed
 	//ClientPrint(null, 3, "levelcheck " + level)
@@ -46,13 +48,13 @@ function FindTargetThink() { //if not damaging bot, look for one
 	local fired = false;
 	//printl("think")
 	
-	//if(buttonPress & Constants.FButtons.IN_ATTACK) {
+	//if(buttonPress & IN_ATTACK) {
 	//	fired = true;
 	//}
 	
 	//if not attacking or in a state we can't/shouldn't drain
-	//if(!fired || self.IsRageDraining() || self.InCond(Constants.ETFCond.TF_COND_TAUNTING)) { 
-	if(!NetProps.GetPropBool(medigun, "m_bAttacking") || self.IsRageDraining() || self.InCond(Constants.ETFCond.TF_COND_TAUNTING)) { 
+	//if(!fired || self.IsRageDraining() || self.InCond(TF_COND_TAUNTING)) { 
+	if(!NetProps.GetPropBool(medigun, "m_bAttacking") || self.IsRageDraining() || self.InCond(TF_COND_TAUNTING)) { 
 		return;
 	}
 	else if(NetProps.GetPropBool(medigun, "m_bHolstered")) {
@@ -105,8 +107,8 @@ function HaveTargetThink() { //we have a target, now check if we're still valid
 	local isValid = true;
 
 	if(NetProps.GetPropBool(self, "m_bUsingActionSlot")) { //maybe check if can spec
-		target.RemoveCond(Constants.ETFCond.TF_COND_INVULNERABLE_USER_BUFF)
-		target.RemoveCond(Constants.ETFCond.TF_COND_CRITBOOSTED_USER_BUFF)
+		target.RemoveCond(TF_COND_INVULNERABLE_USER_BUFF)
+		target.RemoveCond(TF_COND_CRITBOOSTED_USER_BUFF)
 	}
 	
 	if(NetProps.GetPropInt(target, "m_lifeState") == 2) { //0 if alive, 2 dead
@@ -118,7 +120,7 @@ function HaveTargetThink() { //we have a target, now check if we're still valid
 	else if(NetProps.GetPropBool(self, "m_bHolstered")) {
 		isValid = false;
 	}
-	else if(self.InCond(Constants.ETFCond.TF_COND_TAUNTING)) {
+	else if(self.InCond(TF_COND_TAUNTING)) {
 		isValid = false;
 	}
 	else if(self.GetHealTarget() != target) {
@@ -157,9 +159,9 @@ function HaveTargetThink() { //we have a target, now check if we're still valid
 
 function FindTargetTrace() {
 	const MEDIRANGE = 450;
-	local MASK_SHOT = Constants.FContents.CONTENTS_SOLID | Constants.FContents.CONTENTS_MOVEABLE 
-		| Constants.FContents.CONTENTS_MONSTER | Constants.FContents.CONTENTS_WINDOW 
-			| Constants.FContents.CONTENTS_DEBRIS;
+	local MASK_SHOT = CONTENTS_SOLID | CONTENTS_MOVEABLE 
+		| CONTENTS_MONSTER | CONTENTS_WINDOW 
+			| CONTENTS_DEBRIS;
 	//so masks aren't in constants by default
 	//filter out shield here?
 	
@@ -185,8 +187,8 @@ function DamageBot() {
 	const QUICKFIX = 411;
 	const VACCINATOR = 998;
 	const QFBONUS = 1.4;
-	const UBER = Constants.ETFCond.TF_COND_INVULNERABLE_USER_BUFF;
-	const CRIT = Constants.ETFCond.TF_COND_CRITBOOSTED_USER_BUFF;
+	const UBER = TF_COND_INVULNERABLE_USER_BUFF;
+	const CRIT = TF_COND_CRITBOOSTED_USER_BUFF;
 	//anything not those 3 is stock/reskin
 	
 	const DAMAGE = 10;
@@ -196,15 +198,15 @@ function DamageBot() {
 	local fullDamage = DAMAGE; //can't look for attrs in vscript right now
 	
 	if(type == 998) { 
-		if(NetProps.GetPropInt(self, "m_nButtons") & Constants.FButtons.IN_RELOAD) { //remove passive vacc resists on target
-			local cond = Constants.ETFCond.TF_COND_MEDIGUN_SMALL_BULLET_RESIST + NetProps.GetPropInt(medigun, "m_nChargeResistType");
+		if(NetProps.GetPropInt(self, "m_nButtons") & IN_RELOAD) { //remove passive vacc resists on target
+			local cond = TF_COND_MEDIGUN_SMALL_BULLET_RESIST + NetProps.GetPropInt(medigun, "m_nChargeResistType");
 		
 			target.RemoveCond(cond);
 		}
 		if(charge > NetProps.GetPropFloat(medigun, "m_flChargeLevel")) { //also remove vacc ubers
 			//p sure this removes bot applied vacc ubers too
 			//unfortunately can't do anything about that right now
-			target.RemoveCond(Constants.ETFCond.TF_COND_MEDIGUN_UBER_BULLET_RESIST + NetProps.GetPropInt(medigun, "m_nChargeResistType"));
+			target.RemoveCond(TF_COND_MEDIGUN_UBER_BULLET_RESIST + NetProps.GetPropInt(medigun, "m_nChargeResistType"));
 		}
 		charge = NetProps.GetPropFloat(medigun, "m_flChargeLevel");
 	}
@@ -223,7 +225,7 @@ function DamageBot() {
 			fullDamage = fullDamage * (1 + qfMultiplier * 0.25);
 			//damageInfo.Damage = damageInfo.Damage * (.75 + .25 * medigun:GetAttributeValue(ATTRIBUTENAME))
 			//if target.GetConditionProvider(TF_COND_MEGAHEAL) == self then --occasionally no kb gets applied to bot
-			target.RemoveCond(Constants.ETFCond.TF_COND_MEGAHEAL);
+			target.RemoveCond(TF_COND_MEGAHEAL);
 		}
 		else if(type == KRITZKRIEG) {
 			fullDamage = fullDamage * 2;
@@ -235,5 +237,5 @@ function DamageBot() {
 	}
 	
 	target.TakeDamageCustom(self, null, medigun, 
-		Vector(0, 0, 0), target.GetOrigin(), fullDamage, Constants.FDmgType.DMG_ENERGYBEAM, Constants.ETFDmgCustom.TF_DMG_CUSTOM_MERASMUS_ZAP);
+		Vector(0, 0, 0), target.GetOrigin(), fullDamage, DMG_ENERGYBEAM, TF_DMG_CUSTOM_MERASMUS_ZAP);
 }

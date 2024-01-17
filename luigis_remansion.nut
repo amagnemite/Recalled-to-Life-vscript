@@ -21,7 +21,7 @@ function levelCheck(level) {
 		for(local i = 0; i < NetProps.GetPropArraySize(self, "m_hMyWeapons"); i++) {
 			if(NetProps.GetPropEntityArray(self, "m_hMyWeapons", i).GetClassname() == "tf_weapon_medigun") {
 				medigun = NetProps.GetPropEntityArray(self, "m_hMyWeapons", i);
-				i = NetProps.GetPropArraySize(self, "m_hMyWeapons");
+				break;
 			}
 		}
 		
@@ -187,8 +187,8 @@ function DamageBot() {
 	const QUICKFIX = 411;
 	const VACCINATOR = 998;
 	const QFBONUS = 1.4;
-	const UBER = TF_COND_INVULNERABLE_USER_BUFF;
-	const CRIT = TF_COND_CRITBOOSTED_USER_BUFF;
+	local UBER = TF_COND_INVULNERABLE_USER_BUFF;
+	local CRIT = TF_COND_CRITBOOSTED_USER_BUFF;
 	//anything not those 3 is stock/reskin
 	
 	const DAMAGE = 10;
@@ -197,7 +197,7 @@ function DamageBot() {
 	//local fullDamage = DAMAGE * (1 + medigun:GetAttributeValueByClass("healing_mastery", 0) * .25)
 	local fullDamage = DAMAGE; //can't look for attrs in vscript right now
 	
-	if(type == 998) { 
+	if(type == VACCINATOR) { 
 		if(NetProps.GetPropInt(self, "m_nButtons") & IN_RELOAD) { //remove passive vacc resists on target
 			local cond = TF_COND_MEDIGUN_SMALL_BULLET_RESIST + NetProps.GetPropInt(medigun, "m_nChargeResistType");
 		

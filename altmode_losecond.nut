@@ -1,16 +1,5 @@
 local players = {};
 
-function OnGameEvent_player_activate(params) { //when player connects and loaded in?
-	local player = GetPlayerFromUserID(params.userid);
-	print("activate")
-	if(player.GetTeam() == Constants.ETFTeam.T
-	players[player] <- { //handle
-		reanimState = false
-		reanimEntity = null
-		reanimCount = 0
-	};
-}
-
 function OnGameEvent_player_disconnect(params) {
 	local player = GetPlayerFromUserID(params.userid);
 	delete players[player];
@@ -41,22 +30,39 @@ function OnGameEvent_player_spawn(params) {
 		AddThinkToEnt(player, "CheckAggro");
 		*/
 	}
-	else { //player got revived
-		local datatable = players[player];
+	else { 
+		if(player in players) { //player got revived
+			local datatable = players[player];
 		
-		if(datatable.reanimEntity) {
-			datatable.reanimEntity.Kill();		
-			datatable.reanimCount++;
+			if(datatable.reanimEntity) {
+				datatable.reanimEntity.Kill();		
+				datatable.reanimCount++;
+			}
+		
+			datatable.reanimState = false;
+			datatable.reanimEntity = null;
+			//force long respawn
+			//player.RemoveCustomAttribute("mod weapon blocks healing");
+			//player.RemoveCustomAttribute("ignored by bots");
+			EntFireByHandle(player, "RunScriptCode", "addSpawnConds()", -1, null, null);
 		}
-	
-		datatable.reanimState = false;
-		datatable.reanimEntity = null;
-		//force long respawn
-		player.RemoveCustomAttribute("mod weapon blocks healing");
-		player.RemoveCustomAttribute("ignored by bots");
-		player.AddCustomAttribute("min respawn time", 2401, -1);
-		player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
+		else { //first connect
+			print("activate");
+			if(player.GetTeam() == TF_TEAM_RED) {
+				players[player] <- { //handle
+					reanimState = false
+					reanimEntity = null
+					reanimCount = 0
+				};
+				EntFireByHandle(player, "RunScriptCode", "addSpawnConds()", -1, null, null);
+			}
+		}
 	}
+}
+
+::addSpawnConds <- function() { //player_spawned clears so need to delay
+	self.AddCustomAttribute("min respawn time", 2401, -1);
+	self.AddCond(TF_COND_HALLOWEEN_IN_HELL);
 }
 
 function OnGameEvent_player_turned_to_ghost(params) {
@@ -81,14 +87,12 @@ function OnGameEvent_mvm_reset_stats(params) {
 }
 
 function Reset() {
-	const CALLBACKTABLENAME = "GameEventCallbacks";
-	
-	local callbacktable = getroottable()[CALLBACKTABLENAME];
+	local callbacktable = getroottable()["GameEventCallbacks"];
 	
 	AddThinkToEnt(self, null);
 	NetProps.SetPropString(self, "m_iszScriptThinkFunction", "");
 	
-	for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
+	for(local i = 1; i <= MaxPlayers; i++) {
 		local player = PlayerInstanceFromIndex(i);
 		if(player == null) continue;
 		if(IsPlayerABot(player)) continue;
@@ -113,7 +117,6 @@ function Reset() {
 	}
 	*/
 	
-	delete callbacktable.player_activate;
 	delete callbacktable.player_disconnect;
 	delete callbacktable.player_spawn;
 	delete callbacktable.player_turned_to_ghost;
@@ -140,7 +143,7 @@ function CreateReanim(player) { //bootlegs a reanim since becoming a ghost doesn
 	local reanim = SpawnEntityFromTable("entity_revive_marker", {
 		teamnum = player.GetTeam()
 		origin = player.EyePosition()
-		//max_health = 75 + datatable.reanimCount * 10
+		max_health = 75 + datatable.reanimCount * 10
 	});
 	
 	NetProps.SetPropEntity(reanim, "m_hOwner", player);
@@ -170,7 +173,7 @@ function BecomeGhost(player) { //force disconnects any meds healing when the pla
 function WaveStart() {
 	players = {};
 
-	for(local i = 1; i <= Constants.Server.MAX_PLAYERS; i++) {
+	for(local i = 1; i <= MaxPlayers; i++) {
 		local player = PlayerInstanceFromIndex(i);
 		if(player == null) continue;
 		if(player.GetTeam() != 2) continue; //filters out specs
@@ -180,7 +183,7 @@ function WaveStart() {
 		players[player].reanimState <- false;
 		players[player].reanimEntity <- null;
 		players[player].reanimCount <- 0;
-		player.AddCond(Constants.ETFCond.TF_COND_HALLOWEEN_IN_HELL);
+		player.AddCond(TF_COND_HALLOWEEN_IN_HELL);
 		player.AddCustomAttribute("min respawn time", 2401, -1);
 	}
 	
@@ -196,8 +199,7 @@ function LoseThink() {
 			//reanim was somehow destroyed, force respawn
 			player.ForceRespawn();
 		}
-		else if(!player.InCond(Constants.ETFCond.TF_COND_HALLOWEEN_GHOST_MODE) && 
-			NetProps.GetPropInt(player, "m_lifeState") == 0) {
+		else if(!player.InCond(TF_COND_HALLOWEEN_GHOST_MODE) && NetProps.GetPropInt(player, "m_lifeState") == 0) {
 			alive++;
 		}
 	}

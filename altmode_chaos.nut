@@ -16,9 +16,9 @@ function EnableTeleporter(teleporter) { //enable teleporter, called by pop
 	EntFire("teleport_spawn_" + teleporter, "AddOutput", "target alt_spawn_" + occupiedRooms[teleporter]);
 }
 
-function StartRoom(room, triggerEnt) { //turn on a room's effects, called by triggerEnt
+function StartRoom(room) { //turn on a room's effects, called by triggerEnt
 
-	EntFireByHandle(triggerEnt, "Disable", null, -1, null, null);
+	EntFireByHandle(caller, "Disable", null, -1, null, null);
 	
 	EntFire("room_annotation_" + room, "Show");
 	//particle
@@ -27,14 +27,11 @@ function StartRoom(room, triggerEnt) { //turn on a room's effects, called by tri
 		origin = triggerEnt.GetOrigin()
 		filter = RECIPIENT_FILTER_GLOBAL
 	});
-	//EntFire("tf_gamerules", "playvo", teleSound)
-
 	EntFire("light_" + room, "SetPattern", "m");
 	EntFire("notaunt_" + room, "Enable");
 	EntFire("notaunt_toggle_" + room + "_relay", "Enable");
 	EntFire("physbox_" + room, "FireUser1");
 	EntFire("physbox_" + room, "AddOutput", "solid 6");
-	EntFire("pomson_" + room, "Enable");
 	EntFire("push_" + room, "Enable", null, -1);
 	EntFire("push_" + room, "Disable", null, 1.3);
 	EntFire("respawnvis_" + room, "Enable");
@@ -54,7 +51,6 @@ function DoneRoom(teleporter) { //disable room, called by pop
 	EntFire("notaunt_" + room + "*", "Disable");
 	EntFire("physbox_" + room, "AddOutput", "origin -9999 -9999 -9999");
 	EntFire("physbox_" + room, "AddOutput", "solid 0");
-	EntFire("pomson_" + room, "Disable");
 	EntFire("respawnvis_" + room, "Disable");
 	if(timer != null) {
 		local health = (timer.GetHealth() + timer.GetMaxHealth() / 5) > timer.GetMaxHealth() ? timer.GetMaxHealth() : 

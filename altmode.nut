@@ -4,14 +4,8 @@ local upstairsRooms = [5, 6, 7];
 local currentRoom = null;
 
 function WaveInit() { //on wave init teleport players to spawn
-	
-	/*
-	foreach(val in downstairsRooms) {
-		printl(val);
-	}
-	foreach(val in upstairsRooms) {
-		printl(val);
-	} */
+	downstairsRooms = [1, 2, 3, 4];
+	upstairsRooms = [5, 6, 7];
 	
 	local spawnOrigin = Entities.FindByName(null, "teamspawn_all").GetOrigin();
 	
@@ -20,7 +14,7 @@ function WaveInit() { //on wave init teleport players to spawn
 		if(player == null) continue;
 		if(IsPlayerABot(player)) continue;
 		
-		if(player.GetTeam() == 2) {
+		if(player.GetTeam() == TF_TEAM_RED) {
 			player.Teleport(true, spawnOrigin, false, QAngle(0, 0, 0), false, Vector(0, 0, 0));
 		}
 	}
@@ -47,7 +41,6 @@ function StartRoom() { //enable room
 	EntFire("notaunt_toggle_" + currentRoom + "_relay", "Enable");
 	EntFire("physbox_" + currentRoom, "FireUser1");
 	EntFire("physbox_" + currentRoom, "AddOutput", "solid 6");
-	EntFire("pomson_" + currentRoom, "Enable");
 	EntFire("push_" + currentRoom, "Enable");
 	EntFire("push_" + currentRoom, "Disable", null, 1.3);
 	EntFire("respawnvis_" + currentRoom, "Enable");
@@ -65,7 +58,6 @@ function DoneRoom() { //room done, disable everything
 	EntFire("notaunt_" + currentRoom + "*", "Disable");
 	EntFire("physbox_" + currentRoom, "AddOutput", "origin -9999 -9999 -9999");
 	EntFire("physbox_" + currentRoom, "AddOutput", "solid 0");
-	EntFire("pomson_" + currentRoom, "Disable");
 	EntFire("respawnvis_" + currentRoom, "Disable");
 	if(timer != null) {
 		local health = (timer.GetHealth() + timer.GetMaxHealth() / 5) > timer.GetMaxHealth() ? timer.GetMaxHealth() : 

@@ -1,16 +1,34 @@
-altmode <- {
-	players = {};
+//if(!IsSoundPrecached("vo/halloween_boo1.mp3")) {
+	PrecacheModel("models/props_halloween/ghost_no_hat_red.mdl");
+	PrecacheSound("vo/halloween_boo1.mp3");
+	PrecacheSound("vo/halloween_boo2.mp3");
+	PrecacheSound("vo/halloween_boo3.mp3");
+	PrecacheSound("vo/halloween_boo4.mp3");
+	PrecacheSound("vo/halloween_boo5.mp3");
+	PrecacheSound("vo/halloween_boo6.mp3");
+	PrecacheSound("vo/halloween_boo7.mp3");
+//}
+
+::losecond <- {
+	players = {}
 
 	reset = function() {
-		AddThinkToEnt(Entities.FindByName(null, "altmode_losecond_script"), null);
+		AddThinkToEnt(Entities.FindByName(null, "altmode_losecond_script"), null); //only matters for wave win
+		local override = Entities.FindByName(null, "respawn_override")
 		
-		foreach(player in players) {
+		foreach(player, datatable in players) {
 			player.RemoveCustomAttribute("mod weapon blocks healing");
 			player.RemoveCustomAttribute("ignored by bots");
-			EntFire("respawn_override", "EndTouch", null, -1, null, player)
+			override.AcceptInput("EndTouch", null, null, player)
+			player.RemoveCond(TF_COND_HALLOWEEN_IN_HELL);
+			player.RemoveCond(TF_COND_HALLOWEEN_GHOST_MODE)
+			//may just want to forcerespawn + delete reanims
+			
+			if(datatable.reanimEntity && datatable.reanimEntity.IsValid()) {
+				datatable.reanimEntity.Kill()
+			}
 		}
-		
-		delete ::altmode;
+		delete ::losecond;
     }
 	
 	OnGameEvent_recalculate_holidays = function(_) {if(GetRoundState() == 3) reset()}
@@ -18,7 +36,9 @@ altmode <- {
 	
 	OnGameEvent_player_disconnect = function(params) {
 		local player = GetPlayerFromUserID(params.userid);
-		delete players[player];
+		if(player != null && player in players) {
+			delete players[player];
+		}
 	}
 	
 	OnGameEvent_player_spawn = function(params) {
@@ -29,66 +49,76 @@ altmode <- {
 			/*
 			if(player.ValidateScriptScope()) {
 				local playerScript = player.GetScriptScope();
-				playerScript["CheckAggro"] <- function() {
+				playerScript.checkAggro <- function() {
 					local traceTable = {
-						start = player.GetOrigin(),
-						end = player.GetOrigin() + Vector(500, 0, 0)
+						start = self.GetOrigin(),
+						end = self.GetOrigin() + Vector(500, 0, 0)
 					};
 				
 					if(TraceLineEx(traceTable)) {
 						if(traceTable.hit && traceTable.enthit.GetClassname() == "func_physbox_multiplayer") {
-							local target = players[RandomInt(0, players.len() -1)];
-							player.SetAttentionFocus(target);
+							local target = players[RandomInt(0, players.len() - 1)];
+							self.SetAttentionFocus(target);
 						}
 					}
 				}
 			}
-			AddThinkToEnt(player, "CheckAggro");
+			AddThinkToEnt(player, "checkAggro");
 			*/
 		}
 		else { 
 			if(player in players) { //player got revived
 				local datatable = players[player];
 			
-				if(datatable.reanimEntity) {
+				if(datatable.reanimEntity && datatable.reanimEntity.IsValid()) {
 					datatable.reanimEntity.Kill();		
 					datatable.reanimCount++;
 				}
 			
 				datatable.reanimState = false;
 				datatable.reanimEntity = null;
-				//force long respawn
+				
 				//player.RemoveCustomAttribute("mod weapon blocks healing");
 				//player.RemoveCustomAttribute("ignored by bots");
-				EntFireByHandle(player, "CallScriptFunction", "altmode.addSpawnConds()", -1, player, null);
+				EntFireByHandle(player, "RunScriptCode", "losecond.addSpawnConds()", -1, player, null);
 			}
 			else { //first connect
-				print("activate");
 				if(player.GetTeam() == TF_TEAM_RED) {
 					players[player] <- { //handle
 						reanimState = false
 						reanimEntity = null
 						reanimCount = 0
 					};
-					EntFireByHandle(player, "CallScriptFunction", "altmode.addSpawnConds()", -1, player, null);
+					EntFireByHandle(player, "RunScriptCode", "losecond.addSpawnConds()", -1, player, null);
 				}
 			}
 		}
 	}
 	
+	/*
+	OnGameEvent_player_death = function(params) {
+		local player = GetPlayerFromUserID(params.userid);
+		
+		if(IsPlayerABot(player)) {
+			if(player.GetScriptThinkFunc() == "checkAggro") {
+				AddThinkToEnt(player, null)
+			}
+		}
+	}
+	*/
+	
 	addSpawnConds = function() { //player_spawned clears so need to delay
-		EntFire("respawn_override", "StartTouch", null, -1, null, activator)
+		Entities.FindByName(null, "respawn_override").AcceptInput("StartTouch", null, null, activator)
 		activator.AddCond(TF_COND_HALLOWEEN_IN_HELL);
 	}
 	
 	OnGameEvent_player_turned_to_ghost = function(params) {
 		local player = GetPlayerFromUserID(params.userid);
 		
-		CreateReanim(player);
-		BecomeGhost(player);
+		fakeDeath(player)
 	}
 	
-	CreateReanim = function(player) { //bootlegs a reanim since becoming a ghost doesn't count as dying
+	fakeDeath = function(player) { //bootlegs a reanim since becoming a ghost doesn't count as dying
 		local datatable = players[player];
 		
 		local reanim = SpawnEntityFromTable("entity_revive_marker", {
@@ -98,14 +128,12 @@ altmode <- {
 		});
 		
 		NetProps.SetPropEntity(reanim, "m_hOwner", player);
-		//NetProps.SetPropInt(reanim, "m_nBody", 4);
+		NetProps.SetPropInt(reanim, "m_nBody", 4);
 		
 		datatable.reanimState = true;
 		datatable.reanimEntity = reanim;
-	}
-	
-	BecomeGhost = function(player) { //force disconnects any meds healing when the player dies
-		foreach(medic, v in players) {
+		
+		foreach(medic, v in players) { 		//force disconnects any meds healing when the player dies
 			if(medic == player) continue;
 			
 			if(medic.GetHealTarget() == player) {
@@ -117,11 +145,15 @@ altmode <- {
 		}
 		
 		//prevent bot aggro somehow
-		player.AddCustomAttribute("ignored by bots", 1, 0);
-		player.AddCustomAttribute("mod weapon blocks healing", 1, 0);
+		player.AddCustomAttribute("ignored by bots", 1, -1);
+		player.AddCustomAttribute("mod weapon blocks healing", 1, -1);
 	}
 	
 	WaveStart = function() {
+		__CollectGameEventCallbacks(losecond)
+		hidePermaDeathAnnotation()
+		local override = Entities.FindByName(null, "respawn_override")
+		
 		players = {};
 
 		for(local i = 1; i <= MaxPlayers; i++) {
@@ -135,30 +167,19 @@ altmode <- {
 			players[player].reanimEntity <- null;
 			players[player].reanimCount <- 0;
 			player.AddCond(TF_COND_HALLOWEEN_IN_HELL);
-			EntFire("respawn_override", "StartTouch", null, -1, null, player)
+			override.AcceptInput("StartTouch", null, null, player)
 		}
 		
 		AddThinkToEnt(Entities.FindByName(null, "altmode_losecond_script"), "LoseThink");
 	}
 }
 
-function Precache() {
-	PrecacheModel("models/props_halloween/ghost_no_hat_red.mdl");
-	PrecacheSound("vo/halloween_boo1.mp3");
-	PrecacheSound("vo/halloween_boo2.mp3");
-	PrecacheSound("vo/halloween_boo3.mp3");
-	PrecacheSound("vo/halloween_boo4.mp3");
-	PrecacheSound("vo/halloween_boo5.mp3");
-	PrecacheSound("vo/halloween_boo6.mp3");
-	PrecacheSound("vo/halloween_boo7.mp3");
-}
-
 //check if everyone is "dead" and end round if so
 function LoseThink() {
 	local alive = 0;
 	
-	foreach(player, datatable in altmode.players) {
-		if(datatable.reanimState && !datatable.reanimEntity) {
+	foreach(player, datatable in losecond.players) {
+		if(datatable.reanimState && !datatable.reanimEntity.IsValid()) {
 			//reanim was somehow destroyed, force respawn
 			player.ForceRespawn();
 		}

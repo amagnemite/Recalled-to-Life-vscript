@@ -31,6 +31,10 @@ function levelCheck() {
 	local level = medigun.GetAttribute("mod see enemy health", 0)
 	//local level = 1
 	
+	if("HaveTargetThink" in thinkTable) { //mostly cleanup, make sure this always runs
+		delete thinkTable.HaveTargetThink
+	}
+	
 	if(level > 0) {
 		thinkTable.FindTargetThink <- FindTargetThink
 		//AddThinkToEnt(self, "FindTargetThink")
@@ -42,8 +46,14 @@ function levelCheck() {
 
 function RefundMain() {
 	//AddThinkToEnt(self, null);
+	if("HaveTargetThink" in thinkTable) {
+		delete thinkTable.HaveTargetThink
+	}
 	if("FindTargetThink" in thinkTable) {
 		delete thinkTable.FindTargetThink
+	}
+	if(medigun.IsValid()) {
+		NetProps.SetPropEntity(medigun, "m_hHealingTarget", null);
 	}
 }
 
@@ -168,7 +178,8 @@ function DamageBot() {
 	
 	const DAMAGE = 7;
 	local target = self.GetHealTarget();
-	local fullDamage = DAMAGE * (1 + upgradeMultiplier * 0.25)
+	local fullDamage = DAMAGE * (1 + upgradeMultiplier * 0.125)
+	//local fullDamage = DAMAGE
 	
 	if(type == VACCINATOR) { 
 		if(NetProps.GetPropInt(self, "m_nButtons") & IN_RELOAD) { //remove passive vaccinator resists on target
@@ -186,16 +197,15 @@ function DamageBot() {
 	
 	//remove cans, can't check if we have can spec right now
 	if(self.InCond(UBER) && target.InCond(UBER)) {
-		target.RemoveCond(UBER);
+		target.RemoveCondEx(UBER, true);
 	}
 	else if(self.InCond(CRIT) && !target.HasBotAttribute(ALWAYS_CRIT) && target.InCond(CRIT)) {
 		//there are probably niche cases where this is fulfilled without can spec
-		target.RemoveCond(CRIT);
+		target.RemoveCondEx(CRIT, true);
 	}
 	
 	if(NetProps.GetPropBool(medigun, "m_bChargeRelease")) {
 		if(type == QUICKFIX) {
-			//fullDamage = fullDamage * (1 + qfMultiplier * 0.25);
 			fullDamage = fullDamage * 3;
 			//if target.GetConditionProvider(TF_COND_MEGAHEAL) == self then --occasionally no kb gets applied to bot
 			target.RemoveCond(TF_COND_MEGAHEAL);
@@ -205,11 +215,12 @@ function DamageBot() {
 		}
 	}
 	
-	local enemyMultiplier = damageForce * 2 > 1 ? damageForce * 2 : 1	
-	fullDamage *= enemyMultiplier
-	
 	if(type == QUICKFIX) {
 		fullDamage = fullDamage * QFBONUS;
+	}
+	else {
+		local enemyMultiplier = damageForce * 2 > 1 ? damageForce * 2 : 1	
+		fullDamage *= enemyMultiplier
 	}
 	
 	target.TakeDamageCustom(self, null, medigun, 
